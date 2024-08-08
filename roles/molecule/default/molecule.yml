@@ -1,0 +1,63 @@
+dependency:
+  name: galaxy
+  collections:
+    - community.docker
+    - ansible.posix
+
+driver:
+  name: docker
+  options:
+     network_mode: bridge
+
+
+platforms:
+   - name: nexus
+     image: sonatype/nexus3:latest
+     # command: /sbin/init
+     pre_build_image: true
+     network_mode: bridge
+     published_ports:
+      - "8081:8081"
+    
+   - name: jenkins
+     image: jenkins/jenkins:lts
+     command: ["/usr/bin/tini", "--", "/usr/local/bin/jenkins.sh"]
+     pre_build_image: true
+     published_ports:
+       - "8080:8080"
+       - "50000:50000"
+     docker_options:
+       - "--name"
+       - "jenkins"
+       - "-d"
+      
+   - name: instance
+     image: centos:8  # Vous pouvez spécifier l'image CentOS souhaitée ici.
+     #command: /sbin/init
+     pre_build_image: true
+     privileged: true
+     volumes:
+       - /sys/fs/cgroup
+     # Options supplémentaires si nécessaire
+     # You can specify additional Docker options here
+     # for example:
+     env:
+      ANSIBLE_ROLES_PATH: /home/mehdi/Bureau/ansible/roles
+
+provisioner:
+  name: ansible
+  lint:
+    name: pylint
+
+verifier:
+  name: testinfra
+
+
+scenario:
+  name: default
+  test_sequence:
+    - destroy
+    - create
+    - prepare
+    #- converge
+    - verify
